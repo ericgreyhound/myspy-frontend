@@ -77,6 +77,8 @@ const UserProfileScreen = ({
     genero: '',
   });
 
+  const isBusiness = profile.profileType === 'business';
+
   const theme = useMemo(
     () => ({
       background: isDarkMode ? '#0d0d0d' : '#ffffff',
@@ -155,7 +157,7 @@ const UserProfileScreen = ({
         fullName: formData.nome,
         email: formData.email,
         phone: formData.telefone,
-        birthDate: normalizeDateForApi(formData.dataNascimento),
+        ...(isBusiness ? {} : { birthDate: normalizeDateForApi(formData.dataNascimento) }),
         nationality: formData.nacionalidade,
         address: formData.endereco,
         gender: formData.genero,
@@ -312,27 +314,35 @@ const UserProfileScreen = ({
               >
                 {[
                   {
-                    label: profile.profileType === 'business' ? 'Razão social' : 'Nome',
+                    label: isBusiness ? 'Razão social' : 'Nome',
                     value: formData.nome || '—',
                     icon: Mail,
                   },
                   { label: 'E-mail', value: formData.email || '—', icon: Mail },
                   { label: 'Telefone', value: formData.telefone || '—', icon: Phone },
+                  ...(isBusiness
+                    ? []
+                    : [
+                        {
+                          label: 'Data de nascimento',
+                          value: formData.dataNascimento || '—',
+                          icon: CalendarIcon,
+                        },
+                      ]),
                   {
-                    label: profile.profileType === 'business' ? 'Data de abertura' : 'Data de nascimento',
-                    value: formData.dataNascimento || '—',
-                    icon: CalendarIcon,
-                  },
-                  {
-                    label: profile.profileType === 'business' ? 'País de constituição' : 'Nacionalidade',
+                    label: isBusiness ? 'País de constituição' : 'Nacionalidade',
                     value: formData.nacionalidade || '—',
                     icon: null,
                   },
-                  {
-                    label: profile.profileType === 'business' ? 'Natureza jurídica' : 'Gênero',
-                    value: formData.genero || '—',
-                    icon: null,
-                  },
+                  ...(!isBusiness
+                    ? [
+                        {
+                          label: 'Gênero',
+                          value: formData.genero || '—',
+                          icon: null,
+                        },
+                      ]
+                    : []),
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
@@ -357,31 +367,39 @@ const UserProfileScreen = ({
               >
                 {[
                   {
-                    label: profile.profileType === 'business' ? 'Razão social' : 'Nome',
+                    label: isBusiness ? 'Razão social' : 'Nome',
                     value: formData.nome,
                     key: 'nome',
                     type: 'text',
                   },
                   { label: 'E-mail', value: formData.email, key: 'email', type: 'email' },
                   { label: 'Telefone', value: formData.telefone, key: 'telefone', type: 'text' },
+                  ...(isBusiness
+                    ? []
+                    : [
+                        {
+                          label: 'Data de nascimento',
+                          value: normalizeDateForApi(formData.dataNascimento),
+                          key: 'dataNascimento',
+                          type: 'date',
+                        },
+                      ]),
                   {
-                    label: profile.profileType === 'business' ? 'Data de abertura' : 'Data de nascimento',
-                    value: normalizeDateForApi(formData.dataNascimento),
-                    key: 'dataNascimento',
-                    type: 'date',
-                  },
-                  {
-                    label: profile.profileType === 'business' ? 'País de constituição' : 'Nacionalidade',
+                    label: isBusiness ? 'País de constituição' : 'Nacionalidade',
                     value: formData.nacionalidade,
                     key: 'nacionalidade',
                     type: 'text',
                   },
-                  {
-                    label: profile.profileType === 'business' ? 'Natureza jurídica' : 'Gênero',
-                    value: formData.genero,
-                    key: 'genero',
-                    type: 'text',
-                  },
+                  ...(!isBusiness
+                    ? [
+                        {
+                          label: 'Gênero',
+                          value: formData.genero,
+                          key: 'genero',
+                          type: 'text',
+                        },
+                      ]
+                    : []),
                 ].map((field) => (
                   <div key={field.key}>
                     <p style={{ color: theme.textSecondary, fontSize: '11px', letterSpacing: '0.5px', marginBottom: '4px' }}>
