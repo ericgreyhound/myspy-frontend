@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Mail, Lock, Eye, EyeOff, Moon, Sun, Phone, Calendar as CalendarIcon } from "lucide-react";
 import { motion } from "motion/react";
 import logoImage from "figma:asset/e5b6946d364d3f97bc93d1ee8c185d77858727d0.png";
+import noImage from "../assets/no-image.jpeg";
 import { apiUrl } from "../apiClient";
 
 export function SignUpScreen({ onNavigateToLogin, onNavigateToHome, onUserCreated }) {
@@ -17,6 +18,8 @@ export function SignUpScreen({ onNavigateToLogin, onNavigateToHome, onUserCreate
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [businessImage, setBusinessImage] = useState("");
+  const [businessImagePreview, setBusinessImagePreview] = useState(noImage);
 
   const detectTaxType = (digits) => {
     if (digits.length !== 9) return "";
@@ -75,9 +78,28 @@ export function SignUpScreen({ onNavigateToLogin, onNavigateToHome, onUserCreate
     setBirthDate(next);
   };
 
+  const handleBusinessImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setBusinessImage("");
+      setBusinessImagePreview(noImage);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        setBusinessImage(result);
+        setBusinessImagePreview(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSignUp = async (e) => {
     e.preventDefault();
     setError("");
+    const isBusiness = taxIdType === "NIPC";
     if (!taxIdDigits || taxIdDigits.length !== 9) {
       setError("Indique um NIF ou NIPC válido com 9 dígitos.");
       return;
@@ -86,23 +108,29 @@ export function SignUpScreen({ onNavigateToLogin, onNavigateToHome, onUserCreate
       setError("Não conseguimos identificar se é NIF ou NIPC. Confirme o número.");
       return;
     }
-    if (!name || !email || !password || !phone || !birthDate) {
-      setError("Preencha todos os campos obrigatórios, incluindo telefone e data de nascimento.");
+    if (!name || !email || !password || !phone || (!isBusiness && !birthDate)) {
+      setError(
+        isBusiness
+          ? "Preencha todos os campos obrigatórios, incluindo telefone."
+          : "Preencha todos os campos obrigatórios, incluindo telefone e data de nascimento."
+      );
       return;
     }
     try {
       setLoading(true);
+      const payload = {
+        fullName: name,
+        email,
+        password,
+        taxId: taxIdDigits,
+        phone: digitsOnly(phone),
+        ...(isBusiness ? {} : { birthDate: normalizeDateForApi(birthDate) }),
+        ...(isBusiness ? { image: businessImage || noImage } : {}),
+      };
       const res = await fetch(apiUrl("/api/users"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: name,
-          email,
-          password,
-          taxId: taxIdDigits,
-          phone: digitsOnly(phone),
-          birthDate: normalizeDateForApi(birthDate),
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -310,36 +338,70 @@ export function SignUpScreen({ onNavigateToLogin, onNavigateToHome, onUserCreate
           />
         </motion.div>
 
-        <motion.div
-          className="relative w-full"
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4 }}
-        >
+        {taxIdType === "NIPC" && (
           <motion.div
-            className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-            animate={{ color: theme.iconColor }}
+            className="w-full rounded-xl border p-4 flex gap-4 items-center"
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-          >
-            <CalendarIcon size={20} />
-          </motion.div>
-          <motion.input
-            type="text"
-            value={birthDate}
-            onChange={handleBirthDateChange}
-            placeholder={`${!taxIdType || taxIdType === "NIF" ? "Data de nascimento" : "Data de abertura"} (dd/mm/aaaa)`}
-            className="w-full pl-12 pr-12 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all"
-            animate={{
+            style={{
               backgroundColor: theme.inputBg,
               borderColor: theme.inputBorder,
               color: theme.inputText,
             }}
+          >
+            <div className="w-16 h-16 rounded-lg overflow-hidden border" style={{ borderColor: theme.inputBorder }}>
+              <img src={businessImagePreview} alt="Imagem do estabelecimento" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <p className="text-sm font-semibold" style={{ color: theme.inputText, fontFamily: "Montserrat, sans-serif" }}>
+                Imagem do estabelecimento (opcional)
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBusinessImageChange}
+                className="block w-full text-sm"
+                style={{ color: theme.inputText, fontFamily: "Montserrat, sans-serif" }}
+              />
+              <p className="text-xs" style={{ color: theme.placeholderText, fontFamily: "Montserrat, sans-serif" }}>
+                Se não enviar, usaremos a imagem padrão.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {taxIdType !== "NIPC" && (
+          <motion.div
+            className="relative w-full"
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            style={{
-              fontFamily: "Montserrat, sans-serif",
-              "--tw-ring-color": "#b6019a",
-            }}
-          />
-        </motion.div>
+          >
+            <motion.div
+              className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+              animate={{ color: theme.iconColor }}
+              transition={{ duration: 0.4 }}
+            >
+              <CalendarIcon size={20} />
+            </motion.div>
+            <motion.input
+              type="text"
+              value={birthDate}
+              onChange={handleBirthDateChange}
+              placeholder="Data de nascimento (dd/mm/aaaa)"
+              className="w-full pl-12 pr-12 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all"
+              animate={{
+                backgroundColor: theme.inputBg,
+                borderColor: theme.inputBorder,
+                color: theme.inputText,
+              }}
+              transition={{ duration: 0.4 }}
+              style={{
+                fontFamily: "Montserrat, sans-serif",
+                "--tw-ring-color": "#b6019a",
+              }}
+            />
+          </motion.div>
+        )}
 
           <motion.div
             className="relative w-full"
