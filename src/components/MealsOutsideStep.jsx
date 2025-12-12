@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 
 const OPTIONS = ['Pequeno-almoço', 'Almoço', 'Lanche', 'Jantar'];
 
-export default function MealsOutsideStep({ theme, value = [], onNext }) {
+export default function MealsOutsideStep({ theme, value = [], onNext, profileType = 'individual' }) {
   const [selected, setSelected] = useState(Array.isArray(value) ? value : []);
 
   const toggle = (opt) => {
@@ -18,7 +18,7 @@ export default function MealsOutsideStep({ theme, value = [], onNext }) {
         className="mb-2"
         style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: theme.text }}
       >
-        Que refeições costuma fazer fora de casa?
+        {profileType === 'business' ? 'Que refeições costuma servir?' : 'Que refeições costuma fazer fora de casa?'}
       </h2>
       <p className="mb-4" style={{ color: theme.subtle }}>
         Selecione uma ou mais opções

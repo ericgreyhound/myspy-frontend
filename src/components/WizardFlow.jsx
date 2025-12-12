@@ -50,6 +50,8 @@ export default function WizardFlow({ userId, profileType = 'individual', onDone 
 
   const businessSteps = [
     { key: 'address', title: 'Endereço', component: AddressStep },
+    { key: 'cuisine', title: 'Tipos gastronómicas', component: CuisineStep },
+    { key: 'meals', title: 'Refeições servidas', component: MealsOutsideStep },
     { key: 'kids_area', title: 'Área Kids', component: KidsAreaStep },
     { key: 'pet_friendly', title: 'Pet Friendly', component: PetFriendlyStep },
     { key: 'plan', title: 'Planos', component: PlanSelectionStep },
@@ -88,12 +90,17 @@ export default function WizardFlow({ userId, profileType = 'individual', onDone 
 
     const mergedPreferences = { ...state.preferences, ...updates };
 
-    // Move to next or finish
-    if (current < steps.length - 1) {
-      setCurrent((c) => c + 1);
+    // Business: plan step should redirect to Stripe; do not finalize profile here
+    if (profileType === 'business' && currentKey === 'plan') {
       return;
     }
-    // Finish: send to backend
+
+    // Move to next or finish
+    if (current < steps.length - 1) {
+      setCurrent((c) => Math.min(c + 1, steps.length - 1));
+      return;
+    }
+    // Finish (individual): send to backend
     const payload = {
       userId: state.userId,
       preferences: mergedPreferences,
@@ -170,8 +177,10 @@ export default function WizardFlow({ userId, profileType = 'individual', onDone 
         <StepCmp
           isDarkMode={isDarkMode}
           theme={theme}
+          profileType={profileType}
           value={stepValue}
           userId={state.userId}
+          preferences={state.preferences}
           onBack={handleBack}
           onNext={handleNext}
         />

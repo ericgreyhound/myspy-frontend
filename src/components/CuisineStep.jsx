@@ -22,7 +22,7 @@ const OPTIONS = [
   'Vinhos & Enotecas',
 ];
 
-export default function CuisineStep({ isDarkMode, theme, value = [], onNext }) {
+export default function CuisineStep({ isDarkMode, theme, value = [], onNext, profileType = 'individual' }) {
   const [selected, setSelected] = useState(Array.isArray(value) ? value : []);
 
   const toggle = (opt) => {
@@ -37,7 +37,7 @@ export default function CuisineStep({ isDarkMode, theme, value = [], onNext }) {
         className="mb-2"
         style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: theme.text }}
       >
-        Preferências gastronómicas
+        {profileType === 'business' ? 'Tipos gastronómicas' : 'Preferências gastronómicas'}
       </h2>
       <p className="mb-4" style={{ color: theme.subtle }}>
         Selecione pelo menos uma opção

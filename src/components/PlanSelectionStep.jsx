@@ -37,7 +37,13 @@ const PLAN_OPTIONS = [
   },
 ];
 
-export default function PlanSelectionStep({ theme, value = '', userId, onNext }) {
+export default function PlanSelectionStep({
+  theme,
+  value = '',
+  userId,
+  onNext,
+  preferences = {},
+}) {
   const [selected, setSelected] = useState(value || '');
   const [loadingPlan, setLoadingPlan] = useState('');
   const [error, setError] = useState('');
@@ -77,7 +83,18 @@ export default function PlanSelectionStep({ theme, value = '', userId, onNext })
 
       if (data?.url) {
         setInfo('Redirecionando para Stripe…');
-        await onNext(plan.id);
+        if (typeof onNext === 'function') {
+          await onNext(plan.id);
+        }
+        try {
+          const payloadToPersist = {
+            userId,
+            preferences: { ...preferences, plan: plan.id },
+          };
+          localStorage.setItem('pendingProfile', JSON.stringify(payloadToPersist));
+        } catch (_err) {
+          // ignore storage errors
+        }
         window.location.href = data.url;
         return;
       }

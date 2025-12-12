@@ -76,6 +76,40 @@ export function HomeScreen({
     }
   }, [userId]);
   useEffect(() => {
+    async function finalizePendingProfile() {
+      try {
+        const search = new URLSearchParams(window.location.search);
+        const isSuccess = search.get('checkout') === 'success';
+        if (!isSuccess) return;
+        const raw = localStorage.getItem('pendingProfile');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.userId || parsed.userId !== userId) return;
+        const payload = {
+          userId: parsed.userId,
+          preferences: parsed.preferences || {},
+        };
+        const res = await fetch(apiUrl('/api/profiles'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          setCompleted(true);
+          localStorage.removeItem('pendingProfile');
+        }
+      } catch (_err) {
+        // ignore errors to avoid blocking UX
+      } finally {
+        // Clean URL to avoid reprocessing on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('checkout');
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    }
+    finalizePendingProfile();
+  }, [userId, setCompleted]);
+  useEffect(() => {
     let ignore = false;
     async function checkProfile() {
       if (!userId) return;
