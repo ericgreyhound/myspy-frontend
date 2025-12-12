@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { LoginScreen } from './components/LoginScreen.jsx';
 import { SignUpScreen } from './components/SignUpScreen.jsx';
@@ -20,13 +20,35 @@ export default function App() {
   const [resetEmail, setResetEmail] = useState('');
   const [settingsReturnScreen, setSettingsReturnScreen] = useState('home');
 
+  const persistUser = (u) => {
+    if (u) {
+      localStorage.setItem('authUser', JSON.stringify(u));
+      setUser(u);
+    }
+  };
+
+  useEffect(() => {
+    const raw = localStorage.getItem('authUser');
+    if (raw && !user) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id) {
+          setUser(parsed);
+          setCurrentScreen('home');
+        }
+      } catch (_err) {
+        localStorage.removeItem('authUser');
+      }
+    }
+  }, [user]);
+
   const goToSettings = (from) => {
     setSettingsReturnScreen(from);
     setCurrentScreen('settings');
   };
 
   const handleAdminLogin = () => {
-    setUser({
+    persistUser({
       id: 'admin-mock-id',
       fullName: 'Administrador',
       email: 'admin@evot.com.br',
@@ -37,6 +59,7 @@ export default function App() {
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('authUser');
     setCurrentScreen('login');
   };
 
@@ -50,7 +73,7 @@ export default function App() {
               key="login"
               onNavigateToSignUp={() => setCurrentScreen('signup')}
               onNavigateToHome={() => setCurrentScreen('home')}
-              onUserAuthenticated={(u) => setUser(u)}
+              onUserAuthenticated={(u) => persistUser(u)}
               onForgotPassword={() => {
                 setPrevScreen('login');
                 setCurrentScreen('forgotPassword');
@@ -63,7 +86,7 @@ export default function App() {
               key="signup"
               onNavigateToLogin={() => setCurrentScreen('login')} 
               onNavigateToHome={() => setCurrentScreen('home')}
-              onUserCreated={(u) => setUser(u)}
+              onUserCreated={(u) => persistUser(u)}
             />
           )}
           {currentScreen === 'home' && (
